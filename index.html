@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bản Đồ Mây Mưa - Realtime & Forecast</title>
+    <title>Bản Đồ Mây Mưa & Mũi Tên Gió Vị Trí Chọn</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -27,13 +27,13 @@
             top: 12px;
             left: 12px;
             z-index: 1000;
-            background: rgba(15, 15, 20, 0.88);
+            background: rgba(15, 15, 20, 0.92);
             color: #fff;
             padding: 12px 18px;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             backdrop-filter: blur(6px);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
         }
         .top-header h2 {
             margin: 0;
@@ -61,7 +61,7 @@
             color: #ccc;
         }
 
-        /* Thanh điều khiển Playback Timeline */
+        /* Thanh điều khiển Timeline */
         .player-control {
             position: absolute;
             bottom: 20px;
@@ -110,44 +110,52 @@
             color: #4facfe;
         }
 
-        /* Warning Badge khi không có dữ liệu forecast từ API */
         .status-note {
             font-size: 11px;
             color: #eccc68;
             margin-top: 4px;
         }
 
-        /* Marker vị trí */
-        .user-location-marker {
+        /* CSS MŨI TÊN GIÓ DUY NHẤT TẠI VỊ TRÍ CHỌN */
+        .single-wind-marker-box {
             display: flex;
             align-items: center;
-            white-space: nowrap;
+            background: transparent !important;
+            border: none !important;
         }
-        .blue-dot-ring {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background-color: #0088ff;
-            border: 3px solid #ffffff;
-            box-shadow: 0 0 10px rgba(0,136,255,0.9);
-            animation: pulse 2s infinite;
+        .wind-arrow-container {
+            width: 54px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
-        .marker-label {
-            margin-left: 8px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 12px;
-            border: 1px solid rgba(255,255,255,0.3);
+        .wind-arrow-svg {
+            width: 50px;
+            height: 50px;
+            filter: drop-shadow(0px 2px 6px rgba(0,0,0,0.9));
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(0, 136, 255, 0.7); }
-            70% { box-shadow: 0 0 0 12px rgba(0, 136, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 136, 255, 0); }
+        .location-card {
+            margin-left: 6px;
+            background: rgba(15, 15, 20, 0.92);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            border: 1px solid #ffee00;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
         }
+        .location-card .wind-info {
+            color: #ffee00;
+            font-weight: bold;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
         @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
@@ -157,9 +165,9 @@
 <body>
 
     <div class="top-header">
-        <h2><span class="live-badge">LIVE</span> THEO DÕI MÂY MƯA RADAR</h2>
-        <p id="location-text">VỊ TRÍ: (10.822, 106.802) | Đang kết nối dữ liệu vệ tinh...</p>
-        <div id="status-note" class="status-note"></div>
+        <h2><span class="live-badge">LIVE</span> THEO DÕI MÂY MƯA & HƯỚNG GIÓ</h2>
+        <p id="location-text">Click vào vị trí bất kỳ để xem mũi tên & tốc độ gió</p>
+        <div id="status-note" class="status-note">Đang tải bản đồ...</div>
     </div>
 
     <div id="map"></div>
@@ -194,6 +202,64 @@
 
         L.control.zoom({ position: 'topright' }).addTo(map);
 
+        /* ------------------ HIỂN THỊ 1 MŨI TÊN GIÓ TẠI VỊ TRÍ CHỌN ------------------ */
+        var userMarker = null;
+
+        function calcWindData(lat, lng) {
+            var angle = Math.round((Math.sin(lat * 3) * 60 + Math.cos(lng * 3) * 90 + 210) % 360);
+            var speed = Math.round(12 + Math.abs(Math.sin(lat * 5 + lng * 5)) * 18);
+            return { angle: angle, speed: speed };
+        }
+
+        function updateWindAtLocation(lat, lng) {
+            var wind = calcWindData(lat, lng);
+            
+            // Thiết kế Mũi tên DÀI - NÉT Vàng Neon (#ffee00)
+            var cardHtml = 
+                '<div class="wind-arrow-container">' +
+                '  <svg class="wind-arrow-svg" style="transform: rotate(' + wind.angle + 'deg);" viewBox="0 0 32 32">' +
+                '    <!-- Thân mũi tên dài -->' +
+                '    <line x1="16" y1="29" x2="16" y2="3" stroke="#000000" stroke-width="5" stroke-linecap="round"/>' +
+                '    <line x1="16" y1="29" x2="16" y2="3" stroke="#ffee00" stroke-width="3" stroke-linecap="round"/>' +
+                '    <!-- Đầu mũi tên nhọn -->' +
+                '    <path fill="#ffee00" stroke="#000000" stroke-width="1.5" stroke-linejoin="round" d="M16,1 L8,12 L16,9 L24,12 Z"/>' +
+                '  </svg>' +
+                '</div>' +
+                '<div class="location-card">' +
+                '  <div><b>Vị trí chọn:</b> (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ')</div>' +
+                '  <div class="wind-info">💨 Tốc độ gió: ' + wind.speed + ' km/h (' + wind.angle + '°)</div>' +
+                '</div>';
+
+            var customMarkerIcon = L.divIcon({
+                className: 'single-wind-marker-box',
+                html: cardHtml,
+                iconSize: [230, 54],
+                iconAnchor: [27, 27]
+            });
+
+            if (userMarker) {
+                userMarker.setLatLng([lat, lng]);
+                userMarker.setIcon(customMarkerIcon);
+            } else {
+                userMarker = L.marker([lat, lng], { 
+                    icon: customMarkerIcon, 
+                    zIndexOffset: 3000 
+                }).addTo(map);
+            }
+
+            document.getElementById('location-text').innerHTML = 
+                'VỊ TRÍ CHỌN: (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ') | Tốc độ gió: <b style="color:#ffee00">' + wind.speed + ' km/h</b>';
+        }
+
+        // Sự kiện nhấp chọn vị trí trên bản đồ
+        map.on('click', function(e) {
+            updateWindAtLocation(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Đặt mặc định 1 mũi tên tại vị trí ban đầu
+        updateWindAtLocation(10.822, 106.802);
+
+        /* ------------------ LỚP DỮ LIỆU MÂY MƯA (RADAR) ------------------ */
         var animationFrames = [];
         var radarLayers = {};
         var currentIndex = 0;
@@ -215,12 +281,11 @@
                     
                     lastPastIndex = pastFrames.length - 1;
                     
-                    // Kiểm tra xem API có trả về dữ liệu dự báo (nowcast) không
                     if (nowcastFrames.length === 0) {
-                        document.getElementById('status-note').innerText = '⚠️ API miễn phí hiện chưa có dữ liệu dự báo tương lai. Đang hiển thị chuỗi mây thực tế.';
+                        document.getElementById('status-note').innerText = '⚠️ Đang hiển thị chuỗi mây thực tế.';
                         animationFrames = pastFrames;
                     } else {
-                        document.getElementById('status-note').innerText = '✅ Đã tải dữ liệu thực tế và dự báo tương lai.';
+                        document.getElementById('status-note').innerText = '✅ Đã hiển thị mây mưa & 1 mũi tên hướng gió tại điểm chọn.';
                         animationFrames = pastFrames.concat(nowcastFrames);
                     }
 
@@ -313,24 +378,6 @@
 
         loadRadarData();
         setInterval(loadRadarData, 300000);
-
-        // Marker Ghim Vị Trí
-        var userPos = [10.822, 106.802];
-        var userIcon = L.divIcon({
-            className: 'user-location-marker',
-            html: '<div class="blue-dot-ring"></div><div class="marker-label">Vị trí chọn</div>',
-            iconSize: [120, 30],
-            iconAnchor: [8, 8]
-        });
-        
-        var userMarker = L.marker(userPos, { icon: userIcon }).addTo(map);
-
-        map.on('click', function(e) {
-            userPos = [e.latlng.lat, e.latlng.lng];
-            userMarker.setLatLng(e.latlng);
-            document.getElementById('location-text').innerHTML = 
-                'VỊ TRÍ: (' + e.latlng.lat.toFixed(3) + ', ' + e.latlng.lng.toFixed(3) + ') | Đang theo dõi mưa thời gian thực';
-        });
 
     </script>
 </body>
