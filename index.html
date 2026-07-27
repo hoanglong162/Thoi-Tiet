@@ -1,9 +1,12 @@
-<!DOCTYPE html>
+import os
+import webbrowser
+
+html_content = """<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bản Đồ Mây Mưa & Mũi Tên Gió Vị Trí Chọn</title>
+    <title>Bản Đồ Mây Mưa & Hướng Gió Tiếng Việt</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -116,7 +119,7 @@
             margin-top: 4px;
         }
 
-        /* CSS MŨI TÊN GIÓ DUY NHẤT TẠI VỊ TRÍ CHỌN */
+        /* CSS MŨI TÊN GIÓ VÀ THẺ THÔNG TIN TẠI VỊ TRÍ CHỌN */
         .single-wind-marker-box {
             display: flex;
             align-items: center;
@@ -153,7 +156,7 @@
             color: #ffee00;
             font-weight: bold;
             font-size: 13px;
-            margin-top: 2px;
+            margin-top: 3px;
         }
 
         @keyframes blink {
@@ -166,7 +169,7 @@
 
     <div class="top-header">
         <h2><span class="live-badge">LIVE</span> THEO DÕI MÂY MƯA & HƯỚNG GIÓ</h2>
-        <p id="location-text">Click vào vị trí bất kỳ để xem mũi tên & tốc độ gió</p>
+        <p id="location-text">Click vào vị trí bất kỳ để xem hướng gió tiếng Việt & tốc độ gió</p>
         <div id="status-note" class="status-note">Đang tải bản đồ...</div>
     </div>
 
@@ -202,13 +205,30 @@
 
         L.control.zoom({ position: 'topright' }).addTo(map);
 
+        /* ------------------ CHUYỂN ĐỔI GÓC THÀNH HƯỚNG GIÓ TIẾNG VIỆT ------------------ */
+        function getWindDirectionText(angle) {
+            // Chuẩn hóa góc 0 - 360
+            var deg = (angle % 360 + 360) % 360;
+
+            if (deg >= 337.5 || deg < 22.5) return "Bắc";
+            if (deg >= 22.5 && deg < 67.5) return "Bắc -> Đông (Bắc Đông Bắc)";
+            if (deg >= 67.5 && deg < 112.5) return "Đông";
+            if (deg >= 112.5 && deg < 157.5) return "Đông -> Nam (Đông Nam)";
+            if (deg >= 157.5 && deg < 202.5) return "Nam";
+            if (deg >= 202.5 && deg < 247.5) return "Tây -> Nam (Tây Nam)";
+            if (deg >= 247.5 && deg < 292.5) return "Tây";
+            if (deg >= 292.5 && deg < 337.5) return "Tây -> Bắc (Tây Bắc)";
+
+            return "Chưa xác định";
+        }
+
         /* ------------------ HIỂN THỊ 1 MŨI TÊN GIÓ TẠI VỊ TRÍ CHỌN ------------------ */
         var userMarker = null;
 
         function calcWindData(lat, lng) {
             var angle = Math.round((Math.sin(lat * 3) * 60 + Math.cos(lng * 3) * 90 + 210) % 360);
             var speed = Math.round(12 + Math.abs(Math.sin(lat * 5 + lng * 5)) * 18);
-            return { angle: angle, speed: speed };
+            return { angle: angle, speed: speed, dirText: getWindDirectionText(angle) };
         }
 
         function updateWindAtLocation(lat, lng) {
@@ -227,14 +247,15 @@
                 '</div>' +
                 '<div class="location-card">' +
                 '  <div><b>Vị trí chọn:</b> (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ')</div>' +
-                '  <div class="wind-info">💨 Tốc độ gió: ' + wind.speed + ' km/h (' + wind.angle + '°)</div>' +
+                '  <div class="wind-info">💨 Hướng gió: ' + wind.dirText + '</div>' +
+                '  <div style="color:#4facfe; font-weight:bold; margin-top:2px;">⚡ Tốc độ: ' + wind.speed + ' km/h (' + wind.angle + '°)</div>' +
                 '</div>';
 
             var customMarkerIcon = L.divIcon({
                 className: 'single-wind-marker-box',
                 html: cardHtml,
-                iconSize: [230, 54],
-                iconAnchor: [27, 27]
+                iconSize: [260, 60],
+                iconAnchor: [27, 30]
             });
 
             if (userMarker) {
@@ -248,7 +269,7 @@
             }
 
             document.getElementById('location-text').innerHTML = 
-                'VỊ TRÍ CHỌN: (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ') | Tốc độ gió: <b style="color:#ffee00">' + wind.speed + ' km/h</b>';
+                'VỊ TRÍ CHỌN: (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ') | Hướng gió: <b style="color:#ffee00">' + wind.dirText + '</b> | Tốc độ: <b>' + wind.speed + ' km/h</b>';
         }
 
         // Sự kiện nhấp chọn vị trí trên bản đồ
@@ -285,7 +306,7 @@
                         document.getElementById('status-note').innerText = '⚠️ Đang hiển thị chuỗi mây thực tế.';
                         animationFrames = pastFrames;
                     } else {
-                        document.getElementById('status-note').innerText = '✅ Đã hiển thị mây mưa & 1 mũi tên hướng gió tại điểm chọn.';
+                        document.getElementById('status-note').innerText = '✅ Đã hiển thị mây mưa & hướng gió tiếng Việt.';
                         animationFrames = pastFrames.concat(nowcastFrames);
                     }
 
@@ -382,3 +403,11 @@
     </script>
 </body>
 </html>
+"""
+
+file_name = "bando_may_mua.html"
+with open(file_name, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print(f"Đã cập nhật bản đồ thành công: {os.path.abspath(file_name)}")
+webbrowser.open(f"file://{os.path.abspath(file_name)}")
