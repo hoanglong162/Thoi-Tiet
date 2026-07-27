@@ -6,7 +6,7 @@ html_content = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bản Đồ Mây Mưa & Hướng Gió Tiếng Việt</title>
+    <title>Bản Đồ Mây Mưa & HƯỚNG GIÓ Tiếng Việt</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -70,10 +70,10 @@ html_content = """<!DOCTYPE html>
             margin-top: 4px;
         }
 
-        /* NÚT ĐỊNH VỊ VỊ TRÍ HIỆN TẠI */
+        /* NÚT ĐỊNH VỊ VỊ TRÍ HIỆN TẠI (ĐÃ HẠ XUỐNG DƯỚI NÚT ZOOM) */
         .locate-btn {
             position: absolute;
-            top: 80px;
+            top: 130px; /* Hạ xuống khoảng cách 130px để nằm dưới cụm Zoom */
             right: 10px;
             z-index: 1000;
             background: rgba(15, 15, 20, 0.92);
@@ -399,7 +399,7 @@ html_content = """<!DOCTYPE html>
         }
 
         loadRadarData();
-        setInterval(loadRadarData, 300000); // Tự động cập nhật mỗi 5 phút
+        setInterval(loadRadarData, 300000);
 
     </script>
 </body>
@@ -410,5 +410,5 @@ file_name = "bando_may_mua.html"
 with open(file_name, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print(f"Đã cập nhật tính năng định vị vị trí thành công: {os.path.abspath(file_name)}")
+print(f"Đã cập nhật vị trí nút định vị thành công: {os.path.abspath(file_name)}")
 webbrowser.open(f"file://{os.path.abspath(file_name)}")
