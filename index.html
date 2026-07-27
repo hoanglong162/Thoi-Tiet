@@ -70,7 +70,34 @@ html_content = """<!DOCTYPE html>
             margin-top: 4px;
         }
 
-        /* THANH MÀU CHÚ GIẢI LƯỢNG MƯA (RAINFALL LEGEND) */
+        /* NÚT ĐỊNH VỊ VỊ TRÍ HIỆN TẠI */
+        .locate-btn {
+            position: absolute;
+            top: 80px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(15, 15, 20, 0.92);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 34px;
+            height: 34px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            transition: all 0.2s ease;
+        }
+        .locate-btn:hover {
+            background: #0088ff;
+            color: white;
+            border-color: #0088ff;
+        }
+
+        /* THANH MÀU CHÚ GIẢI LƯỢNG MƯA */
         .legend-control {
             position: absolute;
             bottom: 24px;
@@ -180,6 +207,9 @@ html_content = """<!DOCTYPE html>
         <div id="status-note" class="status-note">Đang tải bản đồ...</div>
     </div>
 
+    <!-- Nút định vị GPS -->
+    <button class="locate-btn" onclick="locateUser()" title="Định vị vị trí của tôi">🎯</button>
+
     <div id="map"></div>
 
     <!-- Thanh chú giải Cường độ Lượng mưa -->
@@ -189,7 +219,7 @@ html_content = """<!DOCTYPE html>
             <div class="legend-bar"></div>
             <div class="legend-labels">
                 <span>Không mưa</span>
-                <span>Phù nhè nhẹ</span>
+                <span>Mưa nhẹ</span>
                 <span>Vừa</span>
                 <span>To</span>
                 <span>Rất to</span>
@@ -290,6 +320,45 @@ html_content = """<!DOCTYPE html>
 
         updateWindAtLocation(10.822, 106.802);
 
+        /* ------------------ TÍNH NĂNG ĐỊNH VỊ VỊ TRÍ HIỆN TẠI (GEOLOCATION) ------------------ */
+        function locateUser() {
+            if (!navigator.geolocation) {
+                alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
+                return;
+            }
+
+            document.getElementById('status-note').innerText = '📍 Đang xác định vị trí của bạn...';
+
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+
+                    // Di chuyển bản đồ đến vị trí thực tế
+                    map.setView([lat, lng], 12);
+
+                    // Cập nhật mũi tên gió và bảng thông tin tại vị trí thực tế
+                    updateWindAtLocation(lat, lng);
+
+                    document.getElementById('status-note').innerText = '✅ Đã định vị vị trí của bạn.';
+                },
+                function (error) {
+                    console.error("Lỗi định vị:", error);
+                    var msg = "Không thể lấy vị trí hiện tại.";
+                    if (error.code === error.PERMISSION_DENIED) {
+                        msg = "Vui lòng cho phép trình duyệt truy cập vị trí (GPS).";
+                    }
+                    document.getElementById('status-note').innerText = '❌ ' + msg;
+                    alert(msg);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
         /* ------------------ LỚP DỮ LIỆU MÂY MƯA MỚI NHẤT (REALTIME RADAR) ------------------ */
         var activeRadarLayer = null;
         var transparentPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
@@ -303,7 +372,6 @@ html_content = """<!DOCTYPE html>
                     var pastFrames = data.radar.past;
                     if (pastFrames.length === 0) return;
 
-                    // Lấy khung hình mây mưa mới nhất hiện tại
                     var latestFrame = pastFrames[pastFrames.length - 1];
                     var tileUrl = data.host + latestFrame.path + '/512/{z}/{x}/{y}/2/1_1.png';
 
@@ -342,5 +410,5 @@ file_name = "bando_may_mua.html"
 with open(file_name, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print(f"Đã cập nhật giao diện mới thành công: {os.path.abspath(file_name)}")
+print(f"Đã cập nhật tính năng định vị vị trí thành công: {os.path.abspath(file_name)}")
 webbrowser.open(f"file://{os.path.abspath(file_name)}")
