@@ -64,59 +64,66 @@ html_content = """<!DOCTYPE html>
             color: #ccc;
         }
 
-        /* Thanh điều khiển Timeline */
-        .player-control {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background: rgba(20, 20, 25, 0.92);
-            color: white;
-            padding: 10px 22px;
-            border-radius: 30px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.15);
-        }
-        .play-btn {
-            background: #0088ff;
-            border: none;
-            color: white;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-        .play-btn:hover {
-            background: #0066cc;
-            transform: scale(1.05);
-        }
-        .timeline-slider {
-            width: 280px;
-            cursor: pointer;
-            accent-color: #0088ff;
-        }
-        .time-display {
-            font-size: 13px;
-            font-weight: 600;
-            min-width: 170px;
-            text-align: center;
-            color: #4facfe;
-        }
-
         .status-note {
             font-size: 11px;
             color: #eccc68;
             margin-top: 4px;
+        }
+
+        /* THANH MÀU CHÚ GIẢI LƯỢNG MƯA (RAINFALL LEGEND) */
+        .legend-control {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(15, 15, 20, 0.92);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #00d2d3;
+        }
+        .legend-bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .legend-bar {
+            width: 280px;
+            height: 12px;
+            border-radius: 6px;
+            background: linear-gradient(to right, 
+                rgba(0, 0, 0, 0) 0%,
+                #0000ff 15%, 
+                #00ffff 30%, 
+                #00ff00 45%, 
+                #ffff00 65%, 
+                #ff0000 85%, 
+                #ff00ff 100%
+            );
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .legend-labels {
+            width: 280px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #ddd;
+            margin-top: 4px;
+            font-weight: 600;
         }
 
         /* CSS MŨI TÊN GIÓ VÀ THẺ THÔNG TIN TẠI VỊ TRÍ CHỌN */
@@ -175,10 +182,19 @@ html_content = """<!DOCTYPE html>
 
     <div id="map"></div>
 
-    <div class="player-control">
-        <button id="play-btn" class="play-btn" onclick="togglePlay()">▶</button>
-        <input type="range" id="timeline" class="timeline-slider" min="0" value="0" step="1" oninput="onSliderChange(this.value)">
-        <div id="time-display" class="time-display">Đang tải dữ liệu...</div>
+    <!-- Thanh chú giải Cường độ Lượng mưa -->
+    <div class="legend-control">
+        <div class="legend-title">Cường độ lượng mưa (mm/h)</div>
+        <div class="legend-bar-container">
+            <div class="legend-bar"></div>
+            <div class="legend-labels">
+                <span>Không mưa</span>
+                <span>Phù nhè nhẹ</span>
+                <span>Vừa</span>
+                <span>To</span>
+                <span>Rất to</span>
+            </div>
+        </div>
     </div>
 
     <!-- Leaflet JS -->
@@ -207,7 +223,6 @@ html_content = """<!DOCTYPE html>
 
         /* ------------------ CHUYỂN ĐỔI GÓC THÀNH HƯỚNG GIÓ TIẾNG VIỆT ------------------ */
         function getWindDirectionText(angle) {
-            // Chuẩn hóa góc 0 - 360
             var deg = (angle % 360 + 360) % 360;
 
             if (deg >= 337.5 || deg < 22.5) return "Bắc";
@@ -234,14 +249,11 @@ html_content = """<!DOCTYPE html>
         function updateWindAtLocation(lat, lng) {
             var wind = calcWindData(lat, lng);
             
-            // Thiết kế Mũi tên DÀI - NÉT Vàng Neon (#ffee00)
             var cardHtml = 
                 '<div class="wind-arrow-container">' +
                 '  <svg class="wind-arrow-svg" style="transform: rotate(' + wind.angle + 'deg);" viewBox="0 0 32 32">' +
-                '    <!-- Thân mũi tên dài -->' +
                 '    <line x1="16" y1="29" x2="16" y2="3" stroke="#000000" stroke-width="5" stroke-linecap="round"/>' +
                 '    <line x1="16" y1="29" x2="16" y2="3" stroke="#ffee00" stroke-width="3" stroke-linecap="round"/>' +
-                '    <!-- Đầu mũi tên nhọn -->' +
                 '    <path fill="#ffee00" stroke="#000000" stroke-width="1.5" stroke-linejoin="round" d="M16,1 L8,12 L16,9 L24,12 Z"/>' +
                 '  </svg>' +
                 '</div>' +
@@ -272,66 +284,34 @@ html_content = """<!DOCTYPE html>
                 'VỊ TRÍ CHỌN: (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ') | Hướng gió: <b style="color:#ffee00">' + wind.dirText + '</b> | Tốc độ: <b>' + wind.speed + ' km/h</b>';
         }
 
-        // Sự kiện nhấp chọn vị trí trên bản đồ
         map.on('click', function(e) {
             updateWindAtLocation(e.latlng.lat, e.latlng.lng);
         });
 
-        // Đặt mặc định 1 mũi tên tại vị trí ban đầu
         updateWindAtLocation(10.822, 106.802);
 
-        /* ------------------ LỚP DỮ LIỆU MÂY MƯA (RADAR) ------------------ */
-        var animationFrames = [];
-        var radarLayers = {};
-        var currentIndex = 0;
-        var isPlaying = false;
-        var playInterval = null;
-        var apiHost = '';
-        var lastPastIndex = 0;
+        /* ------------------ LỚP DỮ LIỆU MÂY MƯA MỚI NHẤT (REALTIME RADAR) ------------------ */
+        var activeRadarLayer = null;
         var transparentPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
         function loadRadarData() {
             fetch('https://api.rainviewer.com/public/weather-maps.json')
                 .then(response => response.json())
                 .then(data => {
-                    if (!data) return;
-                    apiHost = data.host;
+                    if (!data || !data.radar || !data.radar.past) return;
                     
-                    var pastFrames = data.radar.past || [];
-                    var nowcastFrames = data.radar.nowcast || [];
-                    
-                    lastPastIndex = pastFrames.length - 1;
-                    
-                    if (nowcastFrames.length === 0) {
-                        document.getElementById('status-note').innerText = '⚠️ Đang hiển thị chuỗi mây thực tế.';
-                        animationFrames = pastFrames;
-                    } else {
-                        document.getElementById('status-note').innerText = '✅ Đã hiển thị mây mưa & hướng gió tiếng Việt.';
-                        animationFrames = pastFrames.concat(nowcastFrames);
+                    var pastFrames = data.radar.past;
+                    if (pastFrames.length === 0) return;
+
+                    // Lấy khung hình mây mưa mới nhất hiện tại
+                    var latestFrame = pastFrames[pastFrames.length - 1];
+                    var tileUrl = data.host + latestFrame.path + '/512/{z}/{x}/{y}/2/1_1.png';
+
+                    if (activeRadarLayer) {
+                        map.removeLayer(activeRadarLayer);
                     }
 
-                    if (animationFrames.length === 0) return;
-
-                    var slider = document.getElementById('timeline');
-                    slider.max = animationFrames.length - 1;
-                    
-                    currentIndex = lastPastIndex >= 0 ? lastPastIndex : 0;
-                    slider.value = currentIndex;
-
-                    preloadLayers();
-                    showFrame(currentIndex);
-                })
-                .catch(err => {
-                    console.error("Lỗi tải dữ liệu radar:", err);
-                    document.getElementById('status-note').innerText = '❌ Không thể kết nối tới máy chủ dữ liệu Radar.';
-                });
-        }
-
-        function preloadLayers() {
-            animationFrames.forEach(frame => {
-                if (!radarLayers[frame.path]) {
-                    var tileUrl = apiHost + frame.path + '/512/{z}/{x}/{y}/2/1_1.png';
-                    radarLayers[frame.path] = L.tileLayer(tileUrl, {
+                    activeRadarLayer = L.tileLayer(tileUrl, {
                         opacity: 0.65,
                         zIndex: 500,
                         tileSize: 512,
@@ -339,66 +319,19 @@ html_content = """<!DOCTYPE html>
                         minNativeZoom: 1,
                         maxNativeZoom: 7,
                         errorTileUrl: transparentPixel
-                    });
-                }
-            });
-        }
+                    }).addTo(map);
 
-        function showFrame(index) {
-            if (index < 0 || index >= animationFrames.length) return;
-
-            var frame = animationFrames[index];
-            var isForecast = index > lastPastIndex; 
-            
-            var timeStr = new Date(frame.time * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-            var label = isForecast ? timeStr + ' (Dự báo)' : timeStr + ' (Thực tế)';
-
-            document.getElementById('time-display').innerText = label;
-            document.getElementById('time-display').style.color = isForecast ? '#ff4757' : '#4facfe';
-            document.getElementById('timeline').value = index;
-
-            Object.keys(radarLayers).forEach(path => {
-                if (path === frame.path) {
-                    if (!map.hasLayer(radarLayers[path])) {
-                        map.addLayer(radarLayers[path]);
-                    }
-                } else {
-                    if (map.hasLayer(radarLayers[path])) {
-                        map.removeLayer(radarLayers[path]);
-                    }
-                }
-            });
-        }
-
-        function togglePlay() {
-            var btn = document.getElementById('play-btn');
-            if (isPlaying) {
-                clearInterval(playInterval);
-                isPlaying = false;
-                btn.innerText = '▶';
-            } else {
-                isPlaying = true;
-                btn.innerText = '❚❚';
-                playInterval = setInterval(function () {
-                    currentIndex++;
-                    if (currentIndex >= animationFrames.length) {
-                        currentIndex = 0;
-                    }
-                    showFrame(currentIndex);
-                }, 650);
-            }
-        }
-
-        function onSliderChange(val) {
-            currentIndex = parseInt(val);
-            if (isPlaying) {
-                togglePlay();
-            }
-            showFrame(currentIndex);
+                    var timeStr = new Date(latestFrame.time * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                    document.getElementById('status-note').innerText = '✅ Cập nhật dữ liệu radar lúc ' + timeStr;
+                })
+                .catch(err => {
+                    console.error("Lỗi tải dữ liệu radar:", err);
+                    document.getElementById('status-note').innerText = '❌ Không thể kết nối tới máy chủ Radar.';
+                });
         }
 
         loadRadarData();
-        setInterval(loadRadarData, 300000);
+        setInterval(loadRadarData, 300000); // Tự động cập nhật mỗi 5 phút
 
     </script>
 </body>
@@ -409,5 +342,5 @@ file_name = "bando_may_mua.html"
 with open(file_name, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print(f"Đã cập nhật bản đồ thành công: {os.path.abspath(file_name)}")
+print(f"Đã cập nhật giao diện mới thành công: {os.path.abspath(file_name)}")
 webbrowser.open(f"file://{os.path.abspath(file_name)}")
