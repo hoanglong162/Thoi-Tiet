@@ -211,13 +211,13 @@ html_content = """<!DOCTYPE html>
             var deg = (angle % 360 + 360) % 360;
 
             if (deg >= 337.5 || deg < 22.5) return "Bắc";
-            if (deg >= 22.5 && deg < 67.5) return "Bắc -> Đông (Bắc Đông Bắc)";
+            if (deg >= 22.5 && deg < 67.5) return "Bắc - Đông";
             if (deg >= 67.5 && deg < 112.5) return "Đông";
-            if (deg >= 112.5 && deg < 157.5) return "Đông -> Nam (Đông Nam)";
+            if (deg >= 112.5 && deg < 157.5) return "Đông - Nam";
             if (deg >= 157.5 && deg < 202.5) return "Nam";
-            if (deg >= 202.5 && deg < 247.5) return "Tây -> Nam (Tây Nam)";
+            if (deg >= 202.5 && deg < 247.5) return "Tây - Nam";
             if (deg >= 247.5 && deg < 292.5) return "Tây";
-            if (deg >= 292.5 && deg < 337.5) return "Tây -> Bắc (Tây Bắc)";
+            if (deg >= 292.5 && deg < 337.5) return "Tây - Bắc";
 
             return "Chưa xác định";
         }
