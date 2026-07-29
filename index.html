@@ -150,45 +150,19 @@
             font-weight: 600;
         }
 
-        /* CSS MŨI TÊN GIÓ VÀ THẺ THÔNG TIN TẠI VỊ TRÍ CHỌN */
+        /* CHỈ GIỮ LẠI CHẤM ĐỎ ĐÁNH DẤU VỊ TRÍ CHỌN */
         .single-wind-marker-box {
-            display: flex;
-            align-items: center;
             background: transparent !important;
             border: none !important;
         }
-        .wind-arrow-container {
-            width: 54px;
-            height: 54px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .wind-arrow-svg {
-            width: 50px;
-            height: 50px;
-            filter: drop-shadow(0px 2px 6px rgba(0,0,0,0.9));
-            transition: transform 0.4s ease;
-        }
 
-        .location-card {
-            margin-left: 6px;
-            background: rgba(15, 15, 20, 0.92);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            border: 1px solid #ffee00;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-            white-space: nowrap;
-            backdrop-filter: blur(4px);
-        }
-        .location-card .wind-info {
-            color: #ffee00;
-            font-weight: bold;
-            font-size: 13px;
-            margin-top: 3px;
+        .point-pin {
+            width: 14px;
+            height: 14px;
+            background-color: #ff4757;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 71, 87, 0.9), 0 2px 6px rgba(0,0,0,0.8);
         }
 
         @keyframes blink {
@@ -269,9 +243,8 @@
         var userMarker = null;
 
         function updateWindAtLocation(lat, lng) {
-            document.getElementById('location-text').innerText = '⏳ Đang tải dữ liệu gió thực tế cho tọa độ (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ')...';
+            document.getElementById('location-text').innerText = '⏳ Đang tải dữ liệu gió cho tọa độ (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ')...';
 
-            // Gọi API Open-Meteo lấy dữ liệu gió hiện tại (Real-time)
             var apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&current=wind_speed_10m,wind_direction_10m';
 
             fetch(apiUrl)
@@ -286,25 +259,12 @@
                     var angle = Math.round(data.current.wind_direction_10m); // độ (degree)
                     var dirText = getWindDirectionText(angle);
 
-                    var cardHtml = 
-                        '<div class="wind-arrow-container">' +
-                        '  <svg class="wind-arrow-svg" style="transform: rotate(' + angle + 'deg);" viewBox="0 0 32 32">' +
-                        '    <line x1="16" y1="29" x2="16" y2="3" stroke="#000000" stroke-width="5" stroke-linecap="round"/>' +
-                        '    <line x1="16" y1="29" x2="16" y2="3" stroke="#ffee00" stroke-width="3" stroke-linecap="round"/>' +
-                        '    <path fill="#ffee00" stroke="#000000" stroke-width="1.5" stroke-linejoin="round" d="M16,1 L8,12 L16,9 L24,12 Z"/>' +
-                        '  </svg>' +
-                        '</div>' +
-                        '<div class="location-card">' +
-                        '  <div><b>Vị trí chọn:</b> (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ')</div>' +
-                        '  <div class="wind-info">💨 Hướng gió: ' + dirText + '</div>' +
-                        '  <div style="color:#4facfe; font-weight:bold; margin-top:2px;">⚡ Tốc độ: ' + speed + ' km/h (' + angle + '°)</div>' +
-                        '</div>';
-
+                    // Chỉ hiển thị duy nhất chấm tròn đỏ tại điểm chọn trên bản đồ
                     var customMarkerIcon = L.divIcon({
                         className: 'single-wind-marker-box',
-                        html: cardHtml,
-                        iconSize: [260, 60],
-                        iconAnchor: [27, 30]
+                        html: '<div class="point-pin"></div>',
+                        iconSize: [14, 14],
+                        iconAnchor: [7, 7] // Căn lề chính tâm điểm nhấp chuột
                     });
 
                     if (userMarker) {
@@ -317,8 +277,9 @@
                         }).addTo(map);
                     }
 
+                    // Cập nhật toàn bộ thông số lên Header góc trên bên trái
                     document.getElementById('location-text').innerHTML = 
-                        'VỊ TRÍ CHỌN: (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ') | Hướng gió: <b style="color:#ffee00">' + dirText + '</b> | Tốc độ thực tế: <b>' + speed + ' km/h</b>';
+                        'VỊ TRÍ CHỌN: (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ') | Hướng gió: <b style="color:#ffee00">' + dirText + '</b> | Tốc độ: <b style="color:#4facfe">' + speed + ' km/h (' + angle + '°)</b>';
                 })
                 .catch(err => {
                     console.error("Lỗi lấy dữ liệu gió:", err);
