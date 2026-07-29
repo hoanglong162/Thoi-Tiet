@@ -1,7 +1,4 @@
-import os
-import webbrowser
-
-html_content = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -70,10 +67,10 @@ html_content = """<!DOCTYPE html>
             margin-top: 4px;
         }
 
-        /* NÚT ĐỊNH VỊ VỊ TRÍ HIỆN TẠI (ĐÃ HẠ XUỐNG DƯỚI NÚT ZOOM) */
+        /* Nút định vị GPS */
         .locate-btn {
             position: absolute;
-            top: 130px; /* Hạ xuống khoảng cách 130px để nằm dưới cụm Zoom */
+            top: 100px;
             right: 10px;
             z-index: 1000;
             background: rgba(15, 15, 20, 0.92);
@@ -97,7 +94,7 @@ html_content = """<!DOCTYPE html>
             border-color: #0088ff;
         }
 
-        /* THANH MÀU CHÚ GIẢI LƯỢNG MƯA */
+        /* Thanh chú giải Cường độ Lượng mưa */
         .legend-control {
             position: absolute;
             bottom: 24px;
@@ -172,6 +169,7 @@ html_content = """<!DOCTYPE html>
             width: 50px;
             height: 50px;
             filter: drop-shadow(0px 2px 6px rgba(0,0,0,0.9));
+            transition: transform 0.4s ease;
         }
 
         .location-card {
@@ -203,7 +201,7 @@ html_content = """<!DOCTYPE html>
 
     <div class="top-header">
         <h2><span class="live-badge">LIVE</span> THEO DÕI MÂY MƯA & HƯỚNG GIÓ</h2>
-        <p id="location-text">Click vào vị trí bất kỳ để xem hướng gió tiếng Việt & tốc độ gió</p>
+        <p id="location-text">Click vào vị trí bất kỳ để xem hướng gió tiếng Việt & tốc độ gió thực tế</p>
         <div id="status-note" class="status-note">Đang tải bản đồ...</div>
     </div>
 
@@ -256,7 +254,7 @@ html_content = """<!DOCTYPE html>
             var deg = (angle % 360 + 360) % 360;
 
             if (deg >= 337.5 || deg < 22.5) return "Bắc";
-            if (deg >= 22.5 && deg < 67.5) return "Bắc - Đông";
+            if (deg >= 22.5 && deg < 67.5) return "Đông - Bắc";
             if (deg >= 67.5 && deg < 112.5) return "Đông";
             if (deg >= 112.5 && deg < 157.5) return "Đông - Nam";
             if (deg >= 157.5 && deg < 202.5) return "Nam";
@@ -267,57 +265,72 @@ html_content = """<!DOCTYPE html>
             return "Chưa xác định";
         }
 
-        /* ------------------ HIỂN THỊ 1 MŨI TÊN GIÓ TẠI VỊ TRÍ CHỌN ------------------ */
+        /* ------------------ LẤY DỮ LIỆU GIÓ THỜI GIAN THỰC TỪ OPEN-METEO API ------------------ */
         var userMarker = null;
 
-        function calcWindData(lat, lng) {
-            var angle = Math.round((Math.sin(lat * 3) * 60 + Math.cos(lng * 3) * 90 + 210) % 360);
-            var speed = Math.round(12 + Math.abs(Math.sin(lat * 5 + lng * 5)) * 18);
-            return { angle: angle, speed: speed, dirText: getWindDirectionText(angle) };
-        }
-
         function updateWindAtLocation(lat, lng) {
-            var wind = calcWindData(lat, lng);
-            
-            var cardHtml = 
-                '<div class="wind-arrow-container">' +
-                '  <svg class="wind-arrow-svg" style="transform: rotate(' + wind.angle + 'deg);" viewBox="0 0 32 32">' +
-                '    <line x1="16" y1="29" x2="16" y2="3" stroke="#000000" stroke-width="5" stroke-linecap="round"/>' +
-                '    <line x1="16" y1="29" x2="16" y2="3" stroke="#ffee00" stroke-width="3" stroke-linecap="round"/>' +
-                '    <path fill="#ffee00" stroke="#000000" stroke-width="1.5" stroke-linejoin="round" d="M16,1 L8,12 L16,9 L24,12 Z"/>' +
-                '  </svg>' +
-                '</div>' +
-                '<div class="location-card">' +
-                '  <div><b>Vị trí chọn:</b> (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ')</div>' +
-                '  <div class="wind-info">💨 Hướng gió: ' + wind.dirText + '</div>' +
-                '  <div style="color:#4facfe; font-weight:bold; margin-top:2px;">⚡ Tốc độ: ' + wind.speed + ' km/h (' + wind.angle + '°)</div>' +
-                '</div>';
+            document.getElementById('location-text').innerText = '⏳ Đang tải dữ liệu gió thực tế cho tọa độ (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ')...';
 
-            var customMarkerIcon = L.divIcon({
-                className: 'single-wind-marker-box',
-                html: cardHtml,
-                iconSize: [260, 60],
-                iconAnchor: [27, 30]
-            });
+            // Gọi API Open-Meteo lấy dữ liệu gió hiện tại (Real-time)
+            var apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&current=wind_speed_10m,wind_direction_10m';
 
-            if (userMarker) {
-                userMarker.setLatLng([lat, lng]);
-                userMarker.setIcon(customMarkerIcon);
-            } else {
-                userMarker = L.marker([lat, lng], { 
-                    icon: customMarkerIcon, 
-                    zIndexOffset: 3000 
-                }).addTo(map);
-            }
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data || !data.current) {
+                        alert("Không thể tải dữ liệu gió tại vị trí này.");
+                        return;
+                    }
 
-            document.getElementById('location-text').innerHTML = 
-                'VỊ TRÍ CHỌN: (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ') | Hướng gió: <b style="color:#ffee00">' + wind.dirText + '</b> | Tốc độ: <b>' + wind.speed + ' km/h</b>';
+                    var speed = Math.round(data.current.wind_speed_10m); // km/h
+                    var angle = Math.round(data.current.wind_direction_10m); // độ (degree)
+                    var dirText = getWindDirectionText(angle);
+
+                    var cardHtml = 
+                        '<div class="wind-arrow-container">' +
+                        '  <svg class="wind-arrow-svg" style="transform: rotate(' + angle + 'deg);" viewBox="0 0 32 32">' +
+                        '    <line x1="16" y1="29" x2="16" y2="3" stroke="#000000" stroke-width="5" stroke-linecap="round"/>' +
+                        '    <line x1="16" y1="29" x2="16" y2="3" stroke="#ffee00" stroke-width="3" stroke-linecap="round"/>' +
+                        '    <path fill="#ffee00" stroke="#000000" stroke-width="1.5" stroke-linejoin="round" d="M16,1 L8,12 L16,9 L24,12 Z"/>' +
+                        '  </svg>' +
+                        '</div>' +
+                        '<div class="location-card">' +
+                        '  <div><b>Vị trí chọn:</b> (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ')</div>' +
+                        '  <div class="wind-info">💨 Hướng gió: ' + dirText + '</div>' +
+                        '  <div style="color:#4facfe; font-weight:bold; margin-top:2px;">⚡ Tốc độ: ' + speed + ' km/h (' + angle + '°)</div>' +
+                        '</div>';
+
+                    var customMarkerIcon = L.divIcon({
+                        className: 'single-wind-marker-box',
+                        html: cardHtml,
+                        iconSize: [260, 60],
+                        iconAnchor: [27, 30]
+                    });
+
+                    if (userMarker) {
+                        userMarker.setLatLng([lat, lng]);
+                        userMarker.setIcon(customMarkerIcon);
+                    } else {
+                        userMarker = L.marker([lat, lng], { 
+                            icon: customMarkerIcon, 
+                            zIndexOffset: 3000 
+                        }).addTo(map);
+                    }
+
+                    document.getElementById('location-text').innerHTML = 
+                        'VỊ TRÍ CHỌN: (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ') | Hướng gió: <b style="color:#ffee00">' + dirText + '</b> | Tốc độ thực tế: <b>' + speed + ' km/h</b>';
+                })
+                .catch(err => {
+                    console.error("Lỗi lấy dữ liệu gió:", err);
+                    document.getElementById('location-text').innerText = '❌ Không thể tải dữ liệu gió từ API.';
+                });
         }
 
         map.on('click', function(e) {
             updateWindAtLocation(e.latlng.lat, e.latlng.lng);
         });
 
+        // Tải vị trí mặc định ban đầu
         updateWindAtLocation(10.822, 106.802);
 
         /* ------------------ TÍNH NĂNG ĐỊNH VỊ VỊ TRÍ HIỆN TẠI (GEOLOCATION) ------------------ */
@@ -334,10 +347,7 @@ html_content = """<!DOCTYPE html>
                     var lat = position.coords.latitude;
                     var lng = position.coords.longitude;
 
-                    // Di chuyển bản đồ đến vị trí thực tế
                     map.setView([lat, lng], 12);
-
-                    // Cập nhật mũi tên gió và bảng thông tin tại vị trí thực tế
                     updateWindAtLocation(lat, lng);
 
                     document.getElementById('status-note').innerText = '✅ Đã định vị vị trí của bạn.';
@@ -390,7 +400,7 @@ html_content = """<!DOCTYPE html>
                     }).addTo(map);
 
                     var timeStr = new Date(latestFrame.time * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                    document.getElementById('status-note').innerText = '✅ Cập nhật dữ liệu radar lúc ' + timeStr;
+                    document.getElementById('status-note').innerText = '✅ Cập nhật dữ liệu radar mây mưa lúc ' + timeStr;
                 })
                 .catch(err => {
                     console.error("Lỗi tải dữ liệu radar:", err);
@@ -404,11 +414,3 @@ html_content = """<!DOCTYPE html>
     </script>
 </body>
 </html>
-"""
-
-file_name = "bando_may_mua.html"
-with open(file_name, "w", encoding="utf-8") as f:
-    f.write(html_content)
-
-print(f"Đã cập nhật vị trí nút định vị thành công: {os.path.abspath(file_name)}")
-webbrowser.open(f"file://{os.path.abspath(file_name)}")
