@@ -21,7 +21,7 @@
             height: 100%;
         }
 
-        /* Nút định vị GPS & Giao thông chung */
+        /* Nút định vị GPS & Giao thông chung (ĐẶT Ở GÓC TRÊN BÊN PHẢI) */
         .map-btn {
             position: absolute;
             right: 12px;
@@ -52,6 +52,31 @@
             top: 66px;
             background: #0088ff; /* Mặc định bật sẵn nút giao thông */
             color: white;
+        }
+
+        /* Đưa cụm zoom xuống góc dưới bên phải */
+        .leaflet-bottom.leaflet-right {
+            bottom: 20px;
+            right: 12px;
+        }
+        .leaflet-control-zoom {
+            border: none !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important;
+            border-radius: 6px !important;
+            overflow: hidden;
+        }
+        .leaflet-control-zoom a {
+            width: 36px !important;
+            height: 36px !important;
+            line-height: 36px !important;
+            font-size: 18px !important;
+            color: #333 !important;
+            background-color: #fff !important;
+            border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+        }
+        .leaflet-control-zoom a:hover {
+            background-color: #0088ff !important;
+            color: #fff !important;
         }
 
         /* Thanh chú giải Cường độ Lượng mưa */
@@ -127,7 +152,7 @@
 </head>
 <body>
 
-    <!-- Nút điều khiển (GPS & Giao thông) -->
+    <!-- Nút điều khiển (GPS & Giao thông) ở góc trên bên phải -->
     <button class="map-btn locate-btn" onclick="locateUser()" title="Định vị vị trí của tôi">🎯</button>
     <button class="map-btn traffic-btn" id="traffic-btn" onclick="toggleTraffic()" title="Bật/Tắt Tình trạng Giao thông">🚗</button>
 
@@ -161,7 +186,7 @@
             zoom: 16,
             minZoom: 3,
             maxZoom: 19,
-            zoomControl: false
+            zoomControl: false // Tắt mặc định để tự cấu hình vị trí ở góc dưới bên phải
         });
 
         // 1. Bản đồ nền chuẩn sáng giao diện Google Maps
@@ -171,7 +196,8 @@
             attribution: '&copy; Google Maps'
         }).addTo(map);
 
-        L.control.zoom({ position: 'topright' }).addTo(map);
+        // Đưa cụm zoom ra góc dưới bên phải (bottomright)
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         // 2. Khởi tạo lớp bản đồ mật độ giao thông (Traffic) phủ lên trên
         var trafficLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=h,traffic&x={x}&y={y}&z={z}', {
@@ -246,7 +272,6 @@
                         }).addTo(map);
                     }
 
-                    // Đã bỏ dòng Vị trí / tọa độ ở dòng đầu tiên theo yêu cầu
                     userMarker.bindPopup('<div style="font-family:sans-serif; font-size:12px; line-height: 1.5;"><b>Hướng gió:</b> ' + dirText + ' (' + angle + '°)<br><b>Tốc độ gió:</b> ' + speed + ' km/h</div>').openPopup();
                 })
                 .catch(err => {
