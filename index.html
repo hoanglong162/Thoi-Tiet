@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bản Đồ Mây Mưa & HƯỚNG GIÓ Tiếng Việt</title>
+    <title>Bản Đồ Mây Mưa, Hướng Gió & Giao Thông Mật Độ</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -21,77 +21,37 @@
             height: 100%;
         }
 
-        /* Header thông tin */
-        .top-header {
+        /* Nút định vị GPS & Giao thông chung */
+        .map-btn {
             position: absolute;
-            top: 12px;
-            left: 12px;
+            right: 12px;
             z-index: 1000;
-            background: rgba(15, 15, 20, 0.92);
-            color: #fff;
-            padding: 12px 18px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            backdrop-filter: blur(6px);
-            border: 1px solid rgba(255,255,255,0.15);
-        }
-        .top-header h2 {
-            margin: 0;
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            color: #ff4757;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .live-badge {
-            background: #ff4757;
-            color: white;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-            animation: blink 1.5s infinite;
-        }
-        .top-header p {
-            margin: 6px 0 0 0;
-            font-size: 12px;
-            color: #ccc;
-        }
-
-        .status-note {
-            font-size: 11px;
-            color: #eccc68;
-            margin-top: 4px;
-        }
-
-        /* Nút định vị GPS */
-        .locate-btn {
-            position: absolute;
-            top: 100px;
-            right: 10px;
-            z-index: 1000;
-            background: rgba(15, 15, 20, 0.92);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.2);
-            width: 34px;
-            height: 34px;
-            border-radius: 4px;
-            font-size: 16px;
+            background: #ffffff;
+            color: #333;
+            border: 1px solid rgba(0,0,0,0.2);
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
             transition: all 0.2s ease;
         }
-        .locate-btn:hover {
+        .map-btn:hover {
             background: #0088ff;
             color: white;
             border-color: #0088ff;
+        }
+        .locate-btn {
+            top: 20px;
+        }
+        .traffic-btn {
+            top: 66px;
+            background: #0088ff; /* Mặc định bật sẵn nút giao thông */
+            color: white;
         }
 
         /* Thanh chú giải Cường độ Lượng mưa */
@@ -101,7 +61,7 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
-            background: rgba(15, 15, 20, 0.92);
+            background: rgba(20, 20, 25, 0.92);
             color: white;
             padding: 12px 20px;
             border-radius: 12px;
@@ -150,12 +110,11 @@
             font-weight: 600;
         }
 
-        /* CHỈ GIỮ LẠI CHẤM ĐỎ ĐÁNH DẤU VỊ TRÍ CHỌN */
+        /* Chấm đỏ đánh dấu vị trí chọn */
         .single-wind-marker-box {
             background: transparent !important;
             border: none !important;
         }
-
         .point-pin {
             width: 14px;
             height: 14px;
@@ -164,23 +123,13 @@
             border-radius: 50%;
             box-shadow: 0 0 10px rgba(255, 71, 87, 0.9), 0 2px 6px rgba(0,0,0,0.8);
         }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
     </style>
 </head>
 <body>
 
-    <div class="top-header">
-        <h2><span class="live-badge">LIVE</span> THEO DÕI MÂY MƯA & HƯỚNG GIÓ</h2>
-        <p id="location-text">Click vào vị trí bất kỳ để xem hướng gió tiếng Việt & tốc độ gió thực tế</p>
-        <div id="status-note" class="status-note">Đang tải bản đồ...</div>
-    </div>
-
-    <!-- Nút định vị GPS -->
-    <button class="locate-btn" onclick="locateUser()" title="Định vị vị trí của tôi">🎯</button>
+    <!-- Nút điều khiển (GPS & Giao thông) -->
+    <button class="map-btn locate-btn" onclick="locateUser()" title="Định vị vị trí của tôi">🎯</button>
+    <button class="map-btn traffic-btn" id="traffic-btn" onclick="toggleTraffic()" title="Bật/Tắt Tình trạng Giao thông">🚗</button>
 
     <div id="map"></div>
 
@@ -203,24 +152,51 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        var centerLat = 10.820;
-        var centerLng = 106.755;
+        // Tọa độ mặc định tại nút giao Võ Chí Công - Vành Đai 2
+        var centerLat = 10.801;
+        var centerLng = 106.790;
         
         var map = L.map('map', {
             center: [centerLat, centerLng],
-            zoom: 10,
+            zoom: 16,
             minZoom: 3,
-            maxZoom: 15,
+            maxZoom: 19,
             zoomControl: false
         });
 
-        // Bản đồ nền OpenStreetMap miễn phí
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19
-}).addTo(map);
+        // 1. Bản đồ nền chuẩn sáng giao diện Google Maps
+        var standardMapLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '&copy; Google Maps'
+        }).addTo(map);
 
         L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // 2. Khởi tạo lớp bản đồ mật độ giao thông (Traffic) phủ lên trên
+        var trafficLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=h,traffic&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            opacity: 0.85,
+            zIndex: 600
+        }).addTo(map);
+
+        var isTrafficActive = true;
+
+        function toggleTraffic() {
+            var btn = document.getElementById('traffic-btn');
+            if (isTrafficActive) {
+                map.removeLayer(trafficLayer);
+                isTrafficActive = false;
+                btn.style.background = "#ffffff";
+                btn.style.color = "#333";
+            } else {
+                trafficLayer.addTo(map);
+                isTrafficActive = true;
+                btn.style.background = "#0088ff";
+                btn.style.color = "white";
+            }
+        }
 
         /* ------------------ CHUYỂN ĐỔI GÓC THÀNH HƯỚNG GIÓ TIẾNG VIỆT ------------------ */
         function getWindDirectionText(angle) {
@@ -242,28 +218,22 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         var userMarker = null;
 
         function updateWindAtLocation(lat, lng) {
-            document.getElementById('location-text').innerText = '⏳ Đang tải dữ liệu gió cho tọa độ (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ')...';
-
             var apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&current=wind_speed_10m,wind_direction_10m';
 
             fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
-                    if (!data || !data.current) {
-                        alert("Không thể tải dữ liệu gió tại vị trí này.");
-                        return;
-                    }
+                    if (!data || !data.current) return;
 
                     var speed = Math.round(data.current.wind_speed_10m); // km/h
                     var angle = Math.round(data.current.wind_direction_10m); // độ (degree)
                     var dirText = getWindDirectionText(angle);
 
-                    // Chỉ hiển thị duy nhất chấm tròn đỏ tại điểm chọn trên bản đồ
                     var customMarkerIcon = L.divIcon({
                         className: 'single-wind-marker-box',
                         html: '<div class="point-pin"></div>',
                         iconSize: [14, 14],
-                        iconAnchor: [7, 7] // Căn lề chính tâm điểm nhấp chuột
+                        iconAnchor: [7, 7]
                     });
 
                     if (userMarker) {
@@ -276,13 +246,11 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         }).addTo(map);
                     }
 
-                    // Cập nhật toàn bộ thông số lên Header góc trên bên trái
-                    document.getElementById('location-text').innerHTML = 
-                        'VỊ TRÍ CHỌN: (' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ') | Hướng gió: <b style="color:#ffee00">' + dirText + '</b> | Tốc độ: <b style="color:#4facfe">' + speed + ' km/h (' + angle + '°)</b>';
+                    // Đã bỏ dòng Vị trí / tọa độ ở dòng đầu tiên theo yêu cầu
+                    userMarker.bindPopup('<div style="font-family:sans-serif; font-size:12px; line-height: 1.5;"><b>Hướng gió:</b> ' + dirText + ' (' + angle + '°)<br><b>Tốc độ gió:</b> ' + speed + ' km/h</div>').openPopup();
                 })
                 .catch(err => {
                     console.error("Lỗi lấy dữ liệu gió:", err);
-                    document.getElementById('location-text').innerText = '❌ Không thể tải dữ liệu gió từ API.';
                 });
         }
 
@@ -290,8 +258,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             updateWindAtLocation(e.latlng.lat, e.latlng.lng);
         });
 
-        // Tải vị trí mặc định ban đầu
-        updateWindAtLocation(10.822, 106.802);
+        // Tải vị trí mặc định ban đầu tại nút giao Võ Chí Công
+        updateWindAtLocation(centerLat, centerLng);
 
         /* ------------------ TÍNH NĂNG ĐỊNH VỊ VỊ TRÍ HIỆN TẠI (GEOLOCATION) ------------------ */
         function locateUser() {
@@ -300,26 +268,17 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 return;
             }
 
-            document.getElementById('status-note').innerText = '📍 Đang xác định vị trí của bạn...';
-
             navigator.geolocation.getCurrentPosition(
                 function (position) {
                     var lat = position.coords.latitude;
                     var lng = position.coords.longitude;
 
-                    map.setView([lat, lng], 12);
+                    map.setView([lat, lng], 16);
                     updateWindAtLocation(lat, lng);
-
-                    document.getElementById('status-note').innerText = '✅ Đã định vị vị trí của bạn.';
                 },
                 function (error) {
                     console.error("Lỗi định vị:", error);
-                    var msg = "Không thể lấy vị trí hiện tại.";
-                    if (error.code === error.PERMISSION_DENIED) {
-                        msg = "Vui lòng cho phép trình duyệt truy cập vị trí (GPS).";
-                    }
-                    document.getElementById('status-note').innerText = '❌ ' + msg;
-                    alert(msg);
+                    alert("Không thể lấy vị trí hiện tại của bạn. Vui lòng kiểm tra quyền GPS.");
                 },
                 {
                     enableHighAccuracy: true,
@@ -350,7 +309,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     }
 
                     activeRadarLayer = L.tileLayer(tileUrl, {
-                        opacity: 0.65,
+                        opacity: 0.55,
                         zIndex: 500,
                         tileSize: 512,
                         zoomOffset: -1,
@@ -358,13 +317,9 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxNativeZoom: 7,
                         errorTileUrl: transparentPixel
                     }).addTo(map);
-
-                    var timeStr = new Date(latestFrame.time * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                    document.getElementById('status-note').innerText = '✅ Cập nhật dữ liệu radar mây mưa lúc ' + timeStr;
                 })
                 .catch(err => {
                     console.error("Lỗi tải dữ liệu radar:", err);
-                    document.getElementById('status-note').innerText = '❌ Không thể kết nối tới máy chủ Radar.';
                 });
         }
 
