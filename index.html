@@ -21,7 +21,7 @@
             height: 100%;
         }
 
-        /* Nút định vị GPS & Giao thông chung (ĐẶT Ở GÓC TRÊN BÊN PHẢI) */
+        /* Nút điều khiển (GPS & Giao thông) ở góc trên bên phải */
         .map-btn {
             position: absolute;
             right: 12px;
@@ -50,8 +50,8 @@
         }
         .traffic-btn {
             top: 66px;
-            background: #0088ff; /* Mặc định bật sẵn nút giao thông */
-            color: white;
+            background: #ffffff; /* Mặc định tắt (nền trắng) */
+            color: #333;
         }
 
         /* Đưa cụm zoom xuống góc dưới bên phải */
@@ -186,28 +186,27 @@
             zoom: 16,
             minZoom: 3,
             maxZoom: 19,
-            zoomControl: false // Tắt mặc định để tự cấu hình vị trí ở góc dưới bên phải
+            zoomControl: false
         });
 
-        // 1. Bản đồ nền chuẩn sáng giao diện Google Maps
-        var standardMapLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-            attribution: '&copy; Google Maps'
+        // 1. Bản đồ nền chuẩn OpenStreetMap (Sạch sẽ, không yêu cầu API key)
+        var standardMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
         // Đưa cụm zoom ra góc dưới bên phải (bottomright)
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // 2. Khởi tạo lớp bản đồ mật độ giao thông (Traffic) phủ lên trên
+        // 2. Khởi tạo lớp bản đồ mật độ giao thông (Traffic) - MẶC ĐỊNH TẮT
         var trafficLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=h,traffic&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
             opacity: 0.85,
             zIndex: 600
-        }).addTo(map);
+        }); // Không gọi .addTo(map) ở đây để giữ trạng thái tắt ban đầu
 
-        var isTrafficActive = true;
+        var isTrafficActive = false;
 
         function toggleTraffic() {
             var btn = document.getElementById('traffic-btn');
