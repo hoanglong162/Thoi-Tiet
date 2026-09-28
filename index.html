@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bản Đồ Mây Mưa, Hướng Gió & Giao Thông Mật Độ</title>
+    <title>Bản Đồ Mây Mưa & Hướng Gió Toàn Cầu</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -50,7 +50,7 @@
         }
         .traffic-btn {
             top: 66px;
-            background: #ffffff; /* Mặc định tắt (nền trắng) */
+            background: #ffffff;
             color: #333;
         }
 
@@ -135,7 +135,7 @@
             font-weight: 600;
         }
 
-        /* Chấm đỏ đánh dấu vị trí chọn */
+        /* Chấm đánh dấu vị trí khi click */
         .single-wind-marker-box {
             background: transparent !important;
             border: none !important;
@@ -147,6 +147,24 @@
             border: 3px solid #ffffff;
             border-radius: 50%;
             box-shadow: 0 0 10px rgba(255, 71, 87, 0.9), 0 2px 6px rgba(0,0,0,0.8);
+        }
+
+        /* Tùy chỉnh Popup giao diện tối chuyên nghiệp */
+        .leaflet-popup-content-wrapper {
+            background: #1a1a1f !important;
+            color: #fff !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5) !important;
+            padding: 2px !important;
+        }
+        .leaflet-popup-tip {
+            background: #1a1a1f !important;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .leaflet-popup-content {
+            margin: 12px 14px !important;
+            line-height: 1.5 !important;
         }
     </style>
 </head>
@@ -177,34 +195,28 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Tọa độ mặc định tại nút giao Võ Chí Công - Vành Đai 2
-        var centerLat = 10.801;
-        var centerLng = 106.790;
-        
+        // Khởi tạo bản đồ tạm thời tại tâm toàn cầu, sẽ tự động chuyển đến vị trí người dùng ngay sau đó
         var map = L.map('map', {
-            center: [centerLat, centerLng],
-            zoom: 16,
-            minZoom: 3,
+            center: [20.0, 0.0],
+            zoom: 3,
+            minZoom: 2,
             maxZoom: 19,
             zoomControl: false
         });
 
-        // 1. Bản đồ nền chuẩn OpenStreetMap (Sạch sẽ, không yêu cầu API key)
-        var standardMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        var standardMapLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
         }).addTo(map);
 
-        // Đưa cụm zoom ra góc dưới bên phải (bottomright)
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // 2. Khởi tạo lớp bản đồ mật độ giao thông (Traffic) - MẶC ĐỊNH TẮT
         var trafficLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=h,traffic&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
             opacity: 0.85,
             zIndex: 600
-        }); // Không gọi .addTo(map) ở đây để giữ trạng thái tắt ban đầu
+        });
 
         var isTrafficActive = false;
 
@@ -223,7 +235,6 @@
             }
         }
 
-        /* ------------------ CHUYỂN ĐỔI GÓC THÀNH HƯỚNG GIÓ TIẾNG VIỆT ------------------ */
         function getWindDirectionText(angle) {
             var deg = (angle % 360 + 360) % 360;
 
@@ -239,21 +250,21 @@
             return "Chưa xác định";
         }
 
-        /* ------------------ LẤY DỮ LIỆU GIÓ THỜI GIAN THỰC TỪ OPEN-METEO API ------------------ */
         var userMarker = null;
 
         function updateWindAtLocation(lat, lng) {
-            var apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&current=wind_speed_10m,wind_direction_10m';
+            var apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&current=wind_speed_10m,wind_direction_10m,precipitation';
 
             fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
                     if (!data || !data.current) return;
 
-                    var speed = Math.round(data.current.wind_speed_10m); // km/h
-                    var angle = Math.round(data.current.wind_direction_10m); // độ (degree)
+                    var speed = Math.round(data.current.wind_speed_10m);
+                    var angle = Math.round(data.current.wind_direction_10m);
+                    var precipitation = data.current.precipitation !== undefined ? data.current.precipitation : 0;
                     var dirText = getWindDirectionText(angle);
-
+                    
                     var customMarkerIcon = L.divIcon({
                         className: 'single-wind-marker-box',
                         html: '<div class="point-pin"></div>',
@@ -271,10 +282,18 @@
                         }).addTo(map);
                     }
 
-                    userMarker.bindPopup('<div style="font-family:sans-serif; font-size:12px; line-height: 1.5;"><b>Hướng gió:</b> ' + dirText + ' (' + angle + '°)<br><b>Tốc độ gió:</b> ' + speed + ' km/h</div>').openPopup();
+                    var popupContent = `
+                        <div style="font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 13px;">
+                            <div style="color: #00d2d3; font-weight: 600; margin-bottom: 4px;">☁️ Hướng đám mây: ${dirText}</div>
+                            <div style="color: #fffa65; font-weight: 600; margin-bottom: 4px;">⚡ Tốc độ: ${speed} km/h (${angle}&deg;)</div>
+                            <div style="color: #ff6b81; font-weight: 600;">🌧️ Lượng mưa: ${precipitation} mm/h</div>
+                        </div>
+                    `;
+
+                    userMarker.bindPopup(popupContent).openPopup();
                 })
                 .catch(err => {
-                    console.error("Lỗi lấy dữ liệu gió:", err);
+                    console.error("Lỗi lấy dữ liệu thời tiết:", err);
                 });
         }
 
@@ -282,10 +301,7 @@
             updateWindAtLocation(e.latlng.lat, e.latlng.lng);
         });
 
-        // Tải vị trí mặc định ban đầu tại nút giao Võ Chí Công
-        updateWindAtLocation(centerLat, centerLng);
-
-        /* ------------------ TÍNH NĂNG ĐỊNH VỊ VỊ TRÍ HIỆN TẠI (GEOLOCATION) ------------------ */
+        // Tự động định vị khi mở app
         function locateUser() {
             if (!navigator.geolocation) {
                 alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
@@ -297,12 +313,11 @@
                     var lat = position.coords.latitude;
                     var lng = position.coords.longitude;
 
-                    map.setView([lat, lng], 16);
+                    map.setView([lat, lng], 11);
                     updateWindAtLocation(lat, lng);
                 },
                 function (error) {
-                    console.error("Lỗi định vị:", error);
-                    alert("Không thể lấy vị trí hiện tại của bạn. Vui lòng kiểm tra quyền GPS.");
+                    console.log("Không thể lấy vị trí tự động, giữ nguyên bản đồ toàn cầu.");
                 },
                 {
                     enableHighAccuracy: true,
@@ -312,7 +327,6 @@
             );
         }
 
-        /* ------------------ LỚP DỮ LIỆU MÂY MƯA MỚI NHẤT (REALTIME RADAR) ------------------ */
         var activeRadarLayer = null;
         var transparentPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
@@ -333,7 +347,7 @@
                     }
 
                     activeRadarLayer = L.tileLayer(tileUrl, {
-                        opacity: 0.55,
+                        opacity: 0.65,
                         zIndex: 500,
                         tileSize: 512,
                         zoomOffset: -1,
@@ -343,12 +357,17 @@
                     }).addTo(map);
                 })
                 .catch(err => {
-                    console.error("Lỗi tải dữ liệu radar:", err);
+                    console.error("Lỗi tải dữ liệu radar toàn cầu:", err);
                 });
         }
 
         loadRadarData();
         setInterval(loadRadarData, 300000);
+
+        // Kích hoạt tự động định vị ngay khi trang tải xong
+        window.onload = function() {
+            locateUser();
+        };
 
     </script>
 </body>
