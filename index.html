@@ -195,7 +195,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Khởi tạo bản đồ tạm thời tại tâm toàn cầu, sẽ tự động chuyển đến vị trí người dùng ngay sau đó
         var map = L.map('map', {
             center: [20.0, 0.0],
             zoom: 3,
@@ -253,7 +252,7 @@
         var userMarker = null;
 
         function updateWindAtLocation(lat, lng) {
-            var apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&current=wind_speed_10m,wind_direction_10m,precipitation';
+            var apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&current=wind_speed_10m,wind_direction_10m';
 
             fetch(apiUrl)
                 .then(response => response.json())
@@ -262,7 +261,6 @@
 
                     var speed = Math.round(data.current.wind_speed_10m);
                     var angle = Math.round(data.current.wind_direction_10m);
-                    var precipitation = data.current.precipitation !== undefined ? data.current.precipitation : 0;
                     var dirText = getWindDirectionText(angle);
                     
                     var customMarkerIcon = L.divIcon({
@@ -282,11 +280,11 @@
                         }).addTo(map);
                     }
 
+                    // Đã bỏ dòng lượng mưa khỏi popup
                     var popupContent = `
                         <div style="font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 13px;">
                             <div style="color: #00d2d3; font-weight: 600; margin-bottom: 4px;">☁️ Hướng đám mây: ${dirText}</div>
-                            <div style="color: #fffa65; font-weight: 600; margin-bottom: 4px;">⚡ Tốc độ: ${speed} km/h (${angle}&deg;)</div>
-                            <div style="color: #ff6b81; font-weight: 600;">🌧️ Lượng mưa: ${precipitation} mm/h</div>
+                            <div style="color: #fffa65; font-weight: 600;">⚡ Tốc độ: ${speed} km/h (${angle}&deg;)</div>
                         </div>
                     `;
 
@@ -301,7 +299,6 @@
             updateWindAtLocation(e.latlng.lat, e.latlng.lng);
         });
 
-        // Tự động định vị khi mở app
         function locateUser() {
             if (!navigator.geolocation) {
                 alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
@@ -364,7 +361,6 @@
         loadRadarData();
         setInterval(loadRadarData, 300000);
 
-        // Kích hoạt tự động định vị ngay khi trang tải xong
         window.onload = function() {
             locateUser();
         };
